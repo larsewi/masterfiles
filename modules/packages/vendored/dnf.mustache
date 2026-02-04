@@ -63,8 +63,8 @@ EXIT_ERROR = 1
 EXIT_UNSUPPORTED = 2
 
 # Protocol constants
-PROTOCOL_VERSION = '1'
-DEFAULT_EPOCH = '0'
+PROTOCOL_VERSION = "1"
+DEFAULT_EPOCH = "0"
 
 # Configuration constants
 MAX_INPUT_LINES = 10000  # Prevent DoS from excessive input
@@ -80,34 +80,35 @@ def _s(val: Union[bytes, str, Any]) -> str:
     Returns:
         String representation of the value
     """
-    return val.decode('utf-8') if isinstance(val, bytes) else str(val)
+    return val.decode("utf-8") if isinstance(val, bytes) else str(val)
+
 
 # Protocol keys (input)
-KEY_OPTIONS = 'options'
-KEY_NAME = 'Name'
-KEY_FILE = 'File'
-KEY_VERSION = 'Version'
-KEY_ARCHITECTURE = 'Architecture'
+KEY_OPTIONS = "options"
+KEY_NAME = "Name"
+KEY_FILE = "File"
+KEY_VERSION = "Version"
+KEY_ARCHITECTURE = "Architecture"
 
 # Protocol keys (output)
-KEY_ERROR_MESSAGE = 'ErrorMessage'
-KEY_PACKAGE_TYPE = 'PackageType'
+KEY_ERROR_MESSAGE = "ErrorMessage"
+KEY_PACKAGE_TYPE = "PackageType"
 
 # Package type values
-PACKAGE_TYPE_FILE = 'file'
-PACKAGE_TYPE_REPO = 'repo'
+PACKAGE_TYPE_FILE = "file"
+PACKAGE_TYPE_REPO = "repo"
 
 # Repository option keys
-OPT_ENABLE_REPO = 'enablerepo'
-OPT_DISABLE_REPO = 'disablerepo'
-OPT_ALLOW_DOWNGRADE = 'allow_downgrade'
+OPT_ENABLE_REPO = "enablerepo"
+OPT_DISABLE_REPO = "disablerepo"
+OPT_ALLOW_DOWNGRADE = "allow_downgrade"
 
 # Boolean string values
-BOOL_TRUE = 'true'
-BOOL_FALSE = 'false'
+BOOL_TRUE = "true"
+BOOL_FALSE = "false"
 
 # Command line option prefix
-CLI_OPTION_PREFIX = '--'
+CLI_OPTION_PREFIX = "--"
 
 
 def _get_package_info_from_file(file_path: str) -> Dict[str, str]:
@@ -124,10 +125,10 @@ def _get_package_info_from_file(file_path: str) -> Dict[str, str]:
     """
     ts = rpm.TransactionSet()
     try:
-        with open(file_path, 'rb') as f:
+        with open(file_path, "rb") as f:
             hdr = ts.hdrFromFdno(f.fileno())
     except Exception as e:
-        raise Exception(f'Failed to read RPM header from {file_path}: {e}')
+        raise Exception(f"Failed to read RPM header from {file_path}: {e}")
 
     name = _s(hdr[rpm.RPMTAG_NAME])  # type: ignore[attr-defined]
     version = _s(hdr[rpm.RPMTAG_VERSION])  # type: ignore[attr-defined]
@@ -137,12 +138,12 @@ def _get_package_info_from_file(file_path: str) -> Dict[str, str]:
     epoch_str = DEFAULT_EPOCH if epoch is None else _s(epoch)
 
     return {
-        'name': name,
-        'version': version,
-        'release': release,
-        'arch': arch,
-        'epoch': epoch_str,
-        'full_version': f'{version}-{release}' if release else version,
+        "name": name,
+        "version": version,
+        "release": release,
+        "arch": arch,
+        "epoch": epoch_str,
+        "full_version": f"{version}-{release}" if release else version,
     }
 
 
@@ -182,7 +183,7 @@ def _parse_stdin() -> Tuple[List[Dict[str, str]], List[str]]:
     for line_num, line in enumerate(sys.stdin):
         if line_num >= MAX_INPUT_LINES:
             raise Exception(f"Input exceeds maximum allowed lines ({MAX_INPUT_LINES})")
-        k, _, v = line.strip().partition('=')
+        k, _, v = line.strip().partition("=")
         if k == KEY_OPTIONS:
             options.append(v)
         elif k in (KEY_NAME, KEY_FILE):
@@ -190,9 +191,9 @@ def _parse_stdin() -> Tuple[List[Dict[str, str]], List[str]]:
                 packages.append(curr)
             curr = {k.lower(): v}
         elif k == KEY_VERSION:
-            curr['version'] = v
+            curr["version"] = v
         elif k == KEY_ARCHITECTURE:
-            curr['arch'] = v
+            curr["arch"] = v
     if curr:
         packages.append(curr)
     return packages, options
@@ -209,8 +210,8 @@ def _is_downgrade_allowed(options: List[str]) -> bool:
     """
     for option in options:
         option = option.strip()
-        if '=' in option:
-            key, value = [x.strip() for x in option.split('=', 1)]
+        if "=" in option:
+            key, value = [x.strip() for x in option.split("=", 1)]
             if key == OPT_ALLOW_DOWNGRADE and value.lower() == BOOL_TRUE:
                 return True
     return False
@@ -225,8 +226,8 @@ def _apply_options(base: dnf.Base, options: List[str]) -> None:
     """
     for option in options:
         option = option.strip()
-        if '=' in option:
-            key, value = [x.strip() for x in option.split('=', 1)]
+        if "=" in option:
+            key, value = [x.strip() for x in option.split("=", 1)]
             if key == OPT_ENABLE_REPO:
                 if base.repos is not None and value in base.repos:
                     base.repos[value].enable()
@@ -248,9 +249,11 @@ def _apply_options(base: dnf.Base, options: List[str]) -> None:
                     try:
                         setattr(base.conf, key, conf_value)
                     except Exception as e:
-                        logging.warning(f"Failed to set config '{key}' to '{conf_value}': {e}")
+                        logging.warning(
+                            f"Failed to set config '{key}' to '{conf_value}': {e}"
+                        )
         elif option.startswith(CLI_OPTION_PREFIX):
-            conf_key = option[len(CLI_OPTION_PREFIX):].replace('-', '_')
+            conf_key = option[len(CLI_OPTION_PREFIX) :].replace("-", "_")
             if hasattr(base.conf, conf_key):
                 attr = getattr(base.conf, conf_key)
                 if not callable(attr):
@@ -291,23 +294,23 @@ def _resolve_spec(pkg: Dict[str, str]) -> Optional[str]:
     Raises:
         Exception: If specified file does not exist
     """
-    name = pkg.get('name')
-    file_path = pkg.get('file')
+    name = pkg.get("name")
+    file_path = pkg.get("file")
 
-    path = file_path or (name if name and name.startswith('/') else None)
+    path = file_path or (name if name and name.startswith("/") else None)
     if path:
         if not os.path.exists(path):
-            raise Exception(f'Package file not found: {path}')
+            raise Exception(f"Package file not found: {path}")
         info = _get_package_info_from_file(path)
-        name = info['name']
+        name = info["name"]
 
     if not name:
         return None
     spec = name
-    if pkg.get('version'):
-        spec += '-' + pkg.get('version')
-    if pkg.get('arch'):
-        spec += '.' + pkg.get('arch')
+    if pkg.get("version"):
+        spec += "-" + pkg.get("version")
+    if pkg.get("arch"):
+        spec += "." + pkg.get("arch")
     return spec
 
 
@@ -322,17 +325,22 @@ def get_package_data() -> int:
         # Optimization: Avoid further processing if no package metadata is provided
         return 1
     pkg = packages[0]
-    pkg_string = pkg.get('file') or pkg.get('name')
+    pkg_string = pkg.get("file") or pkg.get("name")
     if not pkg_string:
         return 1
 
-    if pkg_string.startswith('/'):
+    if pkg_string.startswith("/"):
         info = _get_package_info_from_file(pkg_string)
-        sys.stdout.write(f"{KEY_PACKAGE_TYPE}={PACKAGE_TYPE_FILE}\n{KEY_NAME}={info['name']}\n{KEY_VERSION}={info['full_version']}\n{KEY_ARCHITECTURE}={info['arch']}\n")
+        sys.stdout.write(
+            f"{KEY_PACKAGE_TYPE}={PACKAGE_TYPE_FILE}\n{KEY_NAME}={info['name']}\n{KEY_VERSION}={info['full_version']}\n{KEY_ARCHITECTURE}={info['arch']}\n"
+        )
     else:
-        sys.stdout.write(f"{KEY_PACKAGE_TYPE}={PACKAGE_TYPE_REPO}\n{KEY_NAME}={pkg_string}\n")
+        sys.stdout.write(
+            f"{KEY_PACKAGE_TYPE}={PACKAGE_TYPE_REPO}\n{KEY_NAME}={pkg_string}\n"
+        )
     sys.stdout.flush()
     return 0
+
 
 def list_installed() -> int:
     """List all installed packages.
@@ -343,11 +351,13 @@ def list_installed() -> int:
     _parse_stdin()  # Protocol requires reading stdin even if unused
     mi = rpm.TransactionSet().dbMatch()
     for h in mi:
-        name = _s(h['name'])
-        ver = _s(h['version'])
-        rel = _s(h['release'])
-        arch = _s(h['arch'])
-        sys.stdout.write(f'{KEY_NAME}={name}\n{KEY_VERSION}={ver}-{rel}\n{KEY_ARCHITECTURE}={arch}\n')
+        name = _s(h["name"])
+        ver = _s(h["version"])
+        rel = _s(h["release"])
+        arch = _s(h["arch"])
+        sys.stdout.write(
+            f"{KEY_NAME}={name}\n{KEY_VERSION}={ver}-{rel}\n{KEY_ARCHITECTURE}={arch}\n"
+        )
     sys.stdout.flush()
     return 0
 
@@ -370,12 +380,15 @@ def list_updates(online: bool) -> int:
         if base.resolve():
             for tsi in base.transaction:
                 if tsi.action == dnf.transaction.PKG_UPGRADE:
-                    v_str = f'{tsi.pkg.version}-{tsi.pkg.release}'
-                    sys.stdout.write(f'{KEY_NAME}={tsi.pkg.name}\n{KEY_VERSION}={v_str}\n{KEY_ARCHITECTURE}={tsi.pkg.arch}\n')
+                    v_str = f"{tsi.pkg.version}-{tsi.pkg.release}"
+                    sys.stdout.write(
+                        f"{KEY_NAME}={tsi.pkg.name}\n{KEY_VERSION}={v_str}\n{KEY_ARCHITECTURE}={tsi.pkg.arch}\n"
+                    )
         sys.stdout.flush()
     finally:
         base.close()
     return EXIT_SUCCESS
+
 
 def repo_install() -> int:
     """Install packages from repositories.
@@ -401,13 +414,16 @@ def repo_install() -> int:
                         try:
                             base.downgrade(spec)
                         except Exception as downgrade_err:
-                            logging.warning(f"Failed to install or downgrade '{spec}': "
-                                            f"install error: {install_err}, downgrade error: {downgrade_err}")
+                            logging.warning(
+                                f"Failed to install or downgrade '{spec}': "
+                                f"install error: {install_err}, downgrade error: {downgrade_err}"
+                            )
                     else:
                         logging.warning(f"Failed to install '{spec}': {install_err}")
         return _do_transaction(base)
     finally:
         base.close()
+
 
 def remove() -> int:
     """Remove installed packages.
@@ -430,6 +446,7 @@ def remove() -> int:
     finally:
         base.close()
 
+
 def file_install() -> int:
     """Install packages from local RPM files.
 
@@ -443,13 +460,13 @@ def file_install() -> int:
     if not packages:
         # Optimization: Avoid DNF base initialization if no packages are provided
         return 0
-    rpm_files: List[str] = [p['file'] for p in packages if p.get('file')]
+    rpm_files: List[str] = [p["file"] for p in packages if p.get("file")]
     if not rpm_files:
         # Optimization: Avoid further processing if no file paths were successfully parsed
         return 0
     for f in rpm_files:
         if not os.path.exists(f):
-            raise Exception(f'Package file not found: {f}')
+            raise Exception(f"Package file not found: {f}")
     base = _get_base(with_repos=True)
     try:
         _apply_options(base, options)
@@ -459,14 +476,16 @@ def file_install() -> int:
     finally:
         base.close()
 
+
 def supports_api_version() -> int:
     """Report the supported package module API version.
 
     Returns:
         Always returns 0
     """
-    sys.stdout.write(f'{PROTOCOL_VERSION}\n')
+    sys.stdout.write(f"{PROTOCOL_VERSION}\n")
     return 0
+
 
 def main() -> int:
     """Main entry point for the DNF module.
@@ -481,14 +500,14 @@ def main() -> int:
 
     # Dispatch table for protocol commands
     commands: Dict[str, Any] = {
-        'supports-api-version': supports_api_version,
-        'get-package-data': get_package_data,
-        'list-installed': list_installed,
-        'list-updates': lambda: list_updates(online=True),
-        'list-updates-local': lambda: list_updates(online=False),
-        'repo-install': repo_install,
-        'remove': remove,
-        'file-install': file_install,
+        "supports-api-version": supports_api_version,
+        "get-package-data": get_package_data,
+        "list-installed": list_installed,
+        "list-updates": lambda: list_updates(online=True),
+        "list-updates-local": lambda: list_updates(online=False),
+        "repo-install": repo_install,
+        "remove": remove,
+        "file-install": file_install,
     }
 
     if op not in commands:
@@ -498,11 +517,15 @@ def main() -> int:
         return commands[op]()
     except Exception as e:
         # Proper error output for CFEngine protocol
-        sys.stdout.write(f'{KEY_ERROR_MESSAGE}={str(e)}\n')
+        sys.stdout.write(f"{KEY_ERROR_MESSAGE}={str(e)}\n")
         sys.stdout.flush()
         return EXIT_ERROR
 
 
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.WARNING, format='%(message)s', handlers=[logging.StreamHandler(sys.stderr)])
+if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.WARNING,
+        format="%(message)s",
+        handlers=[logging.StreamHandler(sys.stderr)],
+    )
     sys.exit(main())
