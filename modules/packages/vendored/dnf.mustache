@@ -231,7 +231,7 @@ def _apply_options(base: dnf.Base, options: List[str]) -> None:
                 if base.repos is not None and value in base.repos:
                     base.repos[value].enable()
             elif key == OPT_DISABLE_REPO:
-                if value in base.repos:
+                if base.repos is not None and value in base.repos:
                     base.repos[value].disable()
             elif key == OPT_ALLOW_DOWNGRADE:
                 pass  # Handled separately
