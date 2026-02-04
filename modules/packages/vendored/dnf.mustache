@@ -307,10 +307,12 @@ def _resolve_spec(pkg: Dict[str, str]) -> Optional[str]:
     if not name:
         return None
     spec = name
-    if pkg.get("version"):
-        spec += "-" + pkg.get("version")
-    if pkg.get("arch"):
-        spec += "." + pkg.get("arch")
+    version = pkg.get("version")
+    if version:
+        spec += "-" + version
+    arch = pkg.get("arch")
+    if arch:
+        spec += "." + arch
     return spec
 
 
@@ -377,9 +379,9 @@ def list_updates(online: bool) -> int:
     _apply_options(base, options)
     try:
         base.upgrade_all()
-        if base.resolve():
+        if base.resolve() and base.transaction:
             for tsi in base.transaction:
-                if tsi.action == dnf.transaction.PKG_UPGRADE:
+                if tsi.action == dnf.transaction.PKG_UPGRADE:  # type: ignore[attr-defined]
                     v_str = f"{tsi.pkg.version}-{tsi.pkg.release}"
                     sys.stdout.write(
                         f"{KEY_NAME}={tsi.pkg.name}\n{KEY_VERSION}={v_str}\n{KEY_ARCHITECTURE}={tsi.pkg.arch}\n"
