@@ -159,7 +159,7 @@ def _get_base(with_repos: bool = True) -> dnf.Base:
     base.conf.assumeyes = DEFAULT_ASSUME_YES
     if with_repos:
         base.read_all_repos()
-        base.fill_sack(load_system_repo='auto')
+        base.fill_sack(load_system_repo=True)
     else:
         base.fill_sack(load_system_repo=True, load_available_repos=False)
     return base
