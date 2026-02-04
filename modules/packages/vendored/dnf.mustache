@@ -228,7 +228,7 @@ def _apply_options(base: dnf.Base, options: List[str]) -> None:
         if '=' in option:
             key, value = [x.strip() for x in option.split('=', 1)]
             if key == OPT_ENABLE_REPO:
-                if value in base.repos:
+                if base.repos is not None and value in base.repos:
                     base.repos[value].enable()
             elif key == OPT_DISABLE_REPO:
                 if value in base.repos:
